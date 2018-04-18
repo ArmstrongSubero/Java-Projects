@@ -1,0 +1,168 @@
+<html>
+<head>
+<title>SerialTest.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.ln { color: #999999; font-weight: normal; font-style: normal; }
+.s0 { color: rgb(0,0,128); font-weight: bold; }
+.s1 { color: rgb(0,0,0); }
+.s2 { color: rgb(128,128,128); font-style: italic; }
+.s3 { color: rgb(0,0,255); }
+.s4 { color: rgb(0,128,0); font-weight: bold; }
+</style>
+</head>
+<BODY BGCOLOR="#ffffff">
+<TABLE CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<TR><TD><CENTER>
+<FONT FACE="Arial, Helvetica" COLOR="#000000">
+SerialTest.java</FONT>
+</center></TD></TR></TABLE>
+<pre>
+<span class="s0">import </span><span class="s1">com.fazecast.jSerialComm.SerialPort; 
+</span><span class="s0">import </span><span class="s1">javafx.application.Application; 
+</span><span class="s0">import </span><span class="s1">javafx.scene.Group; 
+</span><span class="s0">import </span><span class="s1">javafx.scene.PerspectiveCamera; 
+</span><span class="s0">import </span><span class="s1">javafx.scene.Scene; 
+</span><span class="s0">import </span><span class="s1">javafx.scene.paint.Color; 
+</span><span class="s0">import </span><span class="s1">javafx.scene.paint.PhongMaterial; 
+</span><span class="s0">import </span><span class="s1">javafx.scene.shape.Cylinder; 
+</span><span class="s0">import </span><span class="s1">javafx.scene.transform.Rotate; 
+</span><span class="s0">import </span><span class="s1">javafx.stage.Stage; 
+</span><span class="s0">import </span><span class="s1">java.util.Scanner; 
+ 
+ 
+</span><span class="s0">public class </span><span class="s1">SerialTest </span><span class="s0">extends </span><span class="s1">Application  { 
+ 
+    </span><span class="s0">public static </span><span class="s1">SerialPort myComPort = </span><span class="s0">null</span><span class="s1">;   </span><span class="s2">// Serial port</span><span class="s1"> 
+    String deviceConnected;                      </span><span class="s2">// Device connected</span><span class="s1"> 
+ 
+    </span><span class="s0">double </span><span class="s1">roll;                                 </span><span class="s2">// Variable for roll, pitch, yaw</span><span class="s1"> 
+    </span><span class="s0">double </span><span class="s1">pitch; 
+    </span><span class="s0">double </span><span class="s1">yaw; 
+ 
+    </span><span class="s0">double </span><span class="s1">w, x, y, z;                           </span><span class="s2">// Variables for quaternion</span><span class="s1"> 
+ 
+ 
+    </span><span class="s2">// add a primitive cylinder</span><span class="s1"> 
+    </span><span class="s0">final </span><span class="s1">Cylinder cylinder = </span><span class="s0">new </span><span class="s1">Cylinder(</span><span class="s3">50</span><span class="s1">, </span><span class="s3">100</span><span class="s1">);  </span><span class="s2">// cyliner construction, specify radis, height</span><span class="s1"> 
+ 
+ 
+    @Override 
+    </span><span class="s0">public void </span><span class="s1">start(Stage primaryStage) </span><span class="s0">throws </span><span class="s1">Exception { 
+ 
+        Group sceneRoot = </span><span class="s0">new </span><span class="s1">Group(); 
+        Scene scene = </span><span class="s0">new </span><span class="s1">Scene(sceneRoot, </span><span class="s3">500</span><span class="s1">, </span><span class="s3">500</span><span class="s1">); 
+        scene.setFill(Color.WHITE); 
+ 
+        </span><span class="s2">// create 3d camera node</span><span class="s1"> 
+        PerspectiveCamera camera = </span><span class="s0">new </span><span class="s1">PerspectiveCamera(</span><span class="s0">true</span><span class="s1">); 
+        camera.setNearClip(</span><span class="s3">0.1</span><span class="s1">); 
+        camera.setFarClip(</span><span class="s3">100000.0</span><span class="s1">); 
+        camera.setTranslateZ(-</span><span class="s3">1000</span><span class="s1">); 
+        scene.setCamera(camera); 
+ 
+        </span><span class="s2">// set cylinder properties</span><span class="s1"> 
+        </span><span class="s0">final </span><span class="s1">PhongMaterial blueMaterial = </span><span class="s0">new </span><span class="s1">PhongMaterial();   </span><span class="s2">// paint for 3d interpolation</span><span class="s1"> 
+        blueMaterial.setDiffuseColor(Color.DEEPSKYBLUE); 
+        blueMaterial.setSpecularColor(Color.BLUE); 
+        cylinder.setMaterial(blueMaterial); 
+ 
+        sceneRoot.getChildren().add(cylinder);   </span><span class="s2">// add shape to scene</span><span class="s1"> 
+ 
+        primaryStage.setTitle(</span><span class="s4">&quot;3DScene&quot;</span><span class="s1">); 
+        primaryStage.setScene(scene); 
+        primaryStage.show(); 
+ 
+ 
+        </span><span class="s2">// Start background thread</span><span class="s1"> 
+        </span><span class="s0">new </span><span class="s1">Thread() { 
+            @Override 
+            </span><span class="s0">public void </span><span class="s1">run() 
+            { 
+                readimu(); 
+            } 
+ 
+            ; 
+        }.start(); 
+ 
+        } 
+ 
+        </span><span class="s0">private void </span><span class="s1">readimu() { 
+ 
+            </span><span class="s2">// get serial ports</span><span class="s1"> 
+            </span><span class="s0">int </span><span class="s1">len = SerialPort.getCommPorts().length; 
+            SerialPort serialPorts[] = </span><span class="s0">new </span><span class="s1">SerialPort[len]; 
+            serialPorts = SerialPort.getCommPorts(); 
+ 
+            </span><span class="s2">// take first serial port</span><span class="s1"> 
+            String portName = serialPorts[</span><span class="s3">0</span><span class="s1">].getDescriptivePortName(); 
+            System.out.println(serialPorts[</span><span class="s3">0</span><span class="s1">].getSystemPortName() + </span><span class="s4">&quot;: &quot; </span><span class="s1">+ portName + </span><span class="s4">&quot;: &quot; </span><span class="s1">+ </span><span class="s3">0</span><span class="s1">); 
+            myComPort = serialPorts[</span><span class="s3">0</span><span class="s1">]; 
+ 
+            </span><span class="s2">// connect to opened serial port</span><span class="s1"> 
+            myComPort.setComPortParameters(</span><span class="s3">9600</span><span class="s1">, </span><span class="s3">8</span><span class="s1">, </span><span class="s3">1</span><span class="s1">, SerialPort.NO_PARITY); 
+            myComPort.openPort(); 
+ 
+            </span><span class="s2">// set timeout as scanner timeout</span><span class="s1"> 
+            myComPort.setComPortTimeouts(SerialPort.TIMEOUT_SCANNER, </span><span class="s3">100</span><span class="s1">, </span><span class="s3">0</span><span class="s1">); 
+ 
+            </span><span class="s2">// double to store quaternion values</span><span class="s1"> 
+            Double[] ar = </span><span class="s0">new </span><span class="s1">Double[</span><span class="s3">4</span><span class="s1">]; 
+            Scanner scanner = </span><span class="s0">new </span><span class="s1">Scanner(myComPort.getInputStream()); 
+ 
+            </span><span class="s2">//</span><span class="s1"> 
+            </span><span class="s0">while </span><span class="s1">(scanner.hasNextLine()) { 
+                </span><span class="s0">try </span><span class="s1">{ 
+ 
+                    String line = scanner.nextLine(); 
+                    String[] tokens = line.split(</span><span class="s4">&quot;,&quot;</span><span class="s1">); 
+ 
+                    </span><span class="s2">// extract quaternion from csv</span><span class="s1"> 
+                    ar[</span><span class="s3">0</span><span class="s1">] = Double.parseDouble(tokens[</span><span class="s3">0</span><span class="s1">]); 
+                    ar[</span><span class="s3">1</span><span class="s1">] = Double.parseDouble(tokens[</span><span class="s3">1</span><span class="s1">]); 
+                    ar[</span><span class="s3">2</span><span class="s1">] = Double.parseDouble(tokens[</span><span class="s3">2</span><span class="s1">]); 
+                    ar[</span><span class="s3">3</span><span class="s1">] = Double.parseDouble(tokens[</span><span class="s3">3</span><span class="s1">]); 
+ 
+                    w = ar[</span><span class="s3">0</span><span class="s1">]; 
+                    x = ar[</span><span class="s3">1</span><span class="s1">]; 
+                    y = ar[</span><span class="s3">2</span><span class="s1">]; 
+                    z = ar[</span><span class="s3">3</span><span class="s1">]; 
+ 
+ 
+                    </span><span class="s2">// convert Eular angles</span><span class="s1"> 
+                    roll  =   Math.atan2(</span><span class="s3">2 </span><span class="s1">* y * w - </span><span class="s3">2 </span><span class="s1">* x * z, </span><span class="s3">1 </span><span class="s1">- </span><span class="s3">2 </span><span class="s1">* y * y - </span><span class="s3">2 </span><span class="s1">* z * z); 
+                    pitch =   Math.atan2(</span><span class="s3">2 </span><span class="s1">* x * w - </span><span class="s3">2 </span><span class="s1">* y * z, </span><span class="s3">1 </span><span class="s1">- </span><span class="s3">2 </span><span class="s1">* x * x - </span><span class="s3">2 </span><span class="s1">* z * z); 
+                    yaw   =   Math.asin(</span><span class="s3">2 </span><span class="s1">* x * y + </span><span class="s3">2 </span><span class="s1">* z * w); 
+ 
+                    </span><span class="s2">// convert to degrees</span><span class="s1"> 
+                    roll  *= </span><span class="s3">57.295779513</span><span class="s1">; 
+                    pitch *= </span><span class="s3">57.295779513</span><span class="s1">; 
+                    yaw   *= </span><span class="s3">57.295779513</span><span class="s1">; 
+ 
+                    </span><span class="s2">// rotate cylinder according to roll, pitch yaw values</span><span class="s1"> 
+                    cylinder.setRotationAxis(Rotate.X_AXIS); 
+                    cylinder.setRotate(roll); 
+ 
+                    System.out.println(ar[</span><span class="s3">0</span><span class="s1">] + </span><span class="s4">&quot; &quot; </span><span class="s1">+ ar[</span><span class="s3">1</span><span class="s1">] + </span><span class="s4">&quot; &quot; </span><span class="s1">+ ar[</span><span class="s3">2</span><span class="s1">] + </span><span class="s4">&quot; &quot; </span><span class="s1">+ ar[</span><span class="s3">3</span><span class="s1">]); 
+                } 
+ 
+                </span><span class="s0">catch </span><span class="s1">(Exception e) 
+                { 
+                    System.out.println(</span><span class="s4">&quot;An error occurred&quot;</span><span class="s1">); 
+                } 
+            } 
+        } 
+ 
+ 
+ 
+    </span><span class="s0">public static void </span><span class="s1">main(String[] args) 
+    { 
+        </span><span class="s2">// Launch application</span><span class="s1"> 
+        Application.launch(args); 
+    } 
+} 
+ 
+ 
+</span></pre>
+</body>
+</html>
